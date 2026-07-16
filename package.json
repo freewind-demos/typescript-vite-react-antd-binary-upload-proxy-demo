@@ -1,0 +1,22 @@
+{
+  "name": "typescript-vite-react-antd-binary-upload-proxy-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --open",
+    "build": "tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "antd": "^5.27.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^5.0.2",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.6"
+  }
+}
