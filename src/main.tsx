@@ -98,7 +98,7 @@ const App: FC = () => {
                 最少参数：`query.fileName`、header `content-type`、HTTP body binary。
               </Typography.Text>
               <Typography.Text type="secondary">
-                后端收到的参数会打在跑 `pnpm dev` 的终端控制台，不回显到页面。
+                后端收到的参数会打印在跑 `pnpm dev` 的终端里。
               </Typography.Text>
             </Space>
           </Card>
@@ -107,7 +107,7 @@ const App: FC = () => {
 
           {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
 
-          {uploadOk ? <Alert type="success" message="上传成功。后端收到的参数请看终端控制台。" /> : null}
+          {uploadOk ? <Alert type="success" message="上传成功。后端收到的参数见终端日志。" /> : null}
 
           <Card title="前端将发送的 req 参数">
             <JsonBlock emptyText="先选文件。" value={lastRequest} />

@@ -16,7 +16,7 @@ import type { IncomingHttpHeaders, IncomingMessage } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-/** 终端里打印的「后端实际收到了什么」摘要（故意不回给前台） */
+/** 后端收到请求后整理出的摘要，用于终端日志 */
 export type ReceivedBinaryUpload = {
   method: string;
   pathname: string;
