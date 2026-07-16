@@ -1,31 +1,15 @@
+/**
+ * 页面壳：选文件、展示状态。
+ *
+ * 真正的「前端怎么发请求」请看 → uploadBinary.ts
+ */
+
 import React, { type ChangeEvent, type FC } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Alert, Card, Layout, Space, Spin, Typography } from 'antd';
+import { buildUploadRequest, uploadBinary } from './uploadBinary';
 
 const { Content, Header } = Layout;
-
-type RequestPreview = {
-  method: 'POST';
-  url: string;
-  headers: Record<string, string>;
-  body: string;
-};
-
-const buildRequestPreview = (file: File): RequestPreview => {
-  const contentType = file.type || 'application/octet-stream';
-  const query = new URLSearchParams({
-    fileName: file.name,
-  });
-
-  return {
-    method: 'POST',
-    url: `/api/upload-binary?${query.toString()}`,
-    headers: {
-      'content-type': contentType,
-    },
-    body: `<binary ${file.size} bytes>`,
-  };
-};
 
 const formatJson = (value: unknown) => JSON.stringify(value, null, 2);
 
@@ -46,7 +30,7 @@ const JsonBlock: FC<{
 
 const App: FC = () => {
   const [selectedFileLabel, setSelectedFileLabel] = React.useState('未选择');
-  const [lastRequest, setLastRequest] = React.useState<RequestPreview | null>(null);
+  const [lastRequest, setLastRequest] = React.useState<unknown>(null);
   const [uploadOk, setUploadOk] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
@@ -59,25 +43,22 @@ const App: FC = () => {
       return;
     }
 
-    const requestPreview = buildRequestPreview(file);
+    // 预览用：把即将发出的请求参数摊开给人看（body 用占位文案，避免把二进制塞进 JSON）
+    const request = buildUploadRequest(file);
     setSelectedFileLabel(`${file.name} (${file.size} bytes)`);
-    setLastRequest(requestPreview);
+    setLastRequest({
+      method: request.method,
+      url: request.url,
+      headers: request.headers,
+      body: `<binary ${file.size} bytes>`,
+    });
     setUploadOk(false);
     setErrorMessage('');
     setUploading(true);
 
     try {
-      const response = await fetch(requestPreview.url, {
-        method: requestPreview.method,
-        headers: requestPreview.headers,
-        body: file,
-      });
-      const responseText = await response.text();
-
-      if (!response.ok) {
-        throw new Error(responseText || `upload failed with ${response.status}`);
-      }
-
+      // ★ 核心上传逻辑在 uploadBinary.ts，页面只负责调用
+      await uploadBinary(file);
       setUploadOk(true);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'upload failed');
@@ -95,6 +76,19 @@ const App: FC = () => {
       </Header>
       <Content style={{ padding: 24 }}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message="重点只看两个文件"
+            description={
+              <span>
+                前端发请求：<Typography.Text code>src/uploadBinary.ts</Typography.Text>
+                {' · '}
+                后端收处理：<Typography.Text code>src/server/handleUploadBinary.ts</Typography.Text>
+              </span>
+            }
+          />
+
           <Card title="操作">
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <Typography.Text>选文件后，前端会立刻把文件原始二进制 POST 到 `/api/upload-binary`。</Typography.Text>

@@ -1,10 +1,13 @@
-import { createHash, randomUUID } from 'node:crypto';
+/**
+ * 后端脚手架：起 HTTP server、路由分发。
+ *
+ * 真正的「收到 binary 怎么处理」请看 → handleUploadBinary.ts
+ */
+
 import { once } from 'node:events';
-import { writeFile } from 'node:fs/promises';
-import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createServer } from 'node:http';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
+import { handleUploadBinary } from './handleUploadBinary';
 
 const backendPort = 43901;
 
@@ -13,86 +16,13 @@ type BinaryUploadBackend = {
   port: number;
 };
 
-// 后端控制台打印用的请求摘要，不回给前台
-type BinaryUploadReceivedSummary = {
-  method: string;
-  pathname: string;
-  query: Record<string, string>;
-  headers: Record<string, string | string[]>;
-  savedTempFilePath: string;
-  body: {
-    bytes: number;
-    sha256: string;
-    first16BytesHex: string;
-    first16BytesBase64: string;
-    contentType: string;
-  };
-};
-
 let backendPromise: Promise<BinaryUploadBackend> | null = null;
-
-function normalizeHeaders(headers: IncomingHttpHeaders) {
-  const normalizedHeaders: Record<string, string | string[]> = {};
-
-  for (const [key, value] of Object.entries(headers)) {
-    if (typeof value === 'undefined') {
-      continue;
-    }
-
-    normalizedHeaders[key] = value;
-  }
-
-  return normalizedHeaders;
-}
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown) {
   const payload = JSON.stringify(body, null, 2);
   res.statusCode = statusCode;
   res.setHeader('content-type', 'application/json; charset=utf-8');
   res.end(payload);
-}
-
-function readRequestBody(req: IncomingMessage) {
-  return new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-
-    req.on('data', (chunk) => {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    });
-    req.on('end', () => {
-      resolve(Buffer.concat(chunks));
-    });
-    req.on('error', reject);
-  });
-}
-
-async function handleBinaryUpload(req: IncomingMessage): Promise<BinaryUploadReceivedSummary> {
-  const requestUrl = req.url ?? '/';
-  const url = new URL(requestUrl, 'http://127.0.0.1');
-  const bodyBuffer = await readRequestBody(req);
-  const fileName = url.searchParams.get('fileName') || 'upload.bin';
-  const fileExtension = path.extname(fileName) || '.bin';
-  const savedTempFilePath = path.join(
-    tmpdir(),
-    `binary-upload-proxy-demo-${Date.now()}-${randomUUID()}${fileExtension}`,
-  );
-
-  await writeFile(savedTempFilePath, bodyBuffer);
-
-  return {
-    method: req.method ?? 'UNKNOWN',
-    pathname: url.pathname,
-    query: Object.fromEntries(url.searchParams.entries()),
-    headers: normalizeHeaders(req.headers),
-    savedTempFilePath,
-    body: {
-      bytes: bodyBuffer.length,
-      sha256: createHash('sha256').update(bodyBuffer).digest('hex'),
-      first16BytesHex: bodyBuffer.subarray(0, 16).toString('hex'),
-      first16BytesBase64: bodyBuffer.subarray(0, 16).toString('base64'),
-      contentType: req.headers['content-type'] || 'application/octet-stream',
-    },
-  };
 }
 
 async function requestHandler(req: IncomingMessage, res: ServerResponse) {
@@ -105,8 +35,8 @@ async function requestHandler(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (req.method === 'POST' && url.pathname === '/api/upload-binary') {
-    const received = await handleBinaryUpload(req);
-    // 参数只打在跑 pnpm dev 的终端，不回前台
+    // ★ 核心逻辑在 handleUploadBinary.ts；这里只负责调用 + 打日志 + 回 ok
+    const received = await handleUploadBinary(req);
     console.log('[binary-upload] received request:\n' + JSON.stringify(received, null, 2));
     sendJson(res, 200, { ok: true });
     return;
