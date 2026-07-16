@@ -35,10 +35,9 @@ pnpm dev
    - `uploadBinary`：`fetch` 把 `File` 当 raw binary body POST 出去
 
 2. **后端收到之后怎么处理** → [`src/server/handleUploadBinary.ts`](src/server/handleUploadBinary.ts)
-   - 读 `query.fileName`
-   - 把 HTTP body 当 Buffer 读完
-   - 写到临时文件
-   - 返回摘要（由脚手架 `console.log` 打到终端）
+   - 读到 `query` / `headers` 立刻打印
+   - body 每个 chunk 到达立刻打印字节数
+   - 写到临时文件，再打印总字节、sha256、落盘路径
 
 ## 页面里重点看什么
 
@@ -46,12 +45,9 @@ pnpm dev
 
 后端收到的参数会打印在跑 `pnpm dev` 的终端里，例如：
 
-- `query`
-- `headers`
-- `body.bytes`
-- `body.sha256`
-- `body.first16BytesHex`
-- `savedTempFilePath`
+- `method` / `pathname` / `query` / `headers`
+- 每个 `body chunk bytes`
+- `body done bytes` / `body sha256` / `savedTempFilePath`
 
 所以你能直接在终端看清：
 
@@ -62,5 +58,5 @@ pnpm dev
 ## 教程
 
 1. 打开 `src/uploadBinary.ts`，看前端如何用 `fetch` 发 raw binary。
-2. 打开 `src/server/handleUploadBinary.ts`，看后端如何读 body 并落盘。
-3. 跑 `pnpm dev`，选一个文件，对照页面上的 req 预览和终端里的 received 摘要。
+2. 打开 `src/server/handleUploadBinary.ts`，看后端如何边收边打日志并落盘。
+3. 跑 `pnpm dev`，选一个文件，对照页面上的 req 预览和终端里逐条打印的日志。

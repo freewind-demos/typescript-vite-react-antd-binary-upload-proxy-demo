@@ -34,9 +34,8 @@ async function requestHandler(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (req.method === 'POST' && url.pathname === '/api/upload-binary') {
-    // ★ 核心逻辑在 handleUploadBinary.ts；这里只负责调用 + 打日志 + 回 ok
-    const received = await handleUploadBinary(req);
-    console.log('[binary-upload] received request:\n' + JSON.stringify(received, null, 2));
+    // ★ 核心逻辑在 handleUploadBinary.ts；这里只负责调用 + 回 ok
+    await handleUploadBinary(req);
     sendJson(res, 200, { ok: true });
     return;
   }
