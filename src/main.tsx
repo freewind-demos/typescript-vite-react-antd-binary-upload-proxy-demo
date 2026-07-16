@@ -9,15 +9,13 @@ type RequestPreview = {
   method: 'POST';
   url: string;
   headers: Record<string, string>;
-  bodySummary: string;
+  body: string;
 };
 
 const buildRequestPreview = (file: File): RequestPreview => {
   const contentType = file.type || 'application/octet-stream';
   const query = new URLSearchParams({
     fileName: file.name,
-    fileSize: String(file.size),
-    mimeType: contentType,
   });
 
   return {
@@ -25,11 +23,8 @@ const buildRequestPreview = (file: File): RequestPreview => {
     url: `/api/upload-binary?${query.toString()}`,
     headers: {
       'content-type': contentType,
-      'x-file-name': file.name,
-      'x-file-size': String(file.size),
-      'x-upload-via': 'vite-proxy-demo',
     },
-    bodySummary: `raw binary body, ${file.size} bytes`,
+    body: `<binary ${file.size} bytes>`,
   };
 };
 
@@ -107,7 +102,7 @@ const App: FC = () => {
               <input type="file" onChange={(event) => void handleFileChange(event)} />
               <Typography.Text>当前文件：{selectedFileLabel}</Typography.Text>
               <Typography.Text type="secondary">
-                metadata 放 query + headers；文件本体直接进 HTTP body。
+                最少参数：`query.fileName`、header `content-type`、HTTP body binary。
               </Typography.Text>
             </Space>
           </Card>

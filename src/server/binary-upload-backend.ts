@@ -10,17 +10,10 @@ type BinaryUploadBackend = {
   port: number;
 };
 
-type QueryEntry = {
-  key: string;
-  value: string;
-};
-
 type BinaryUploadEchoResponse = {
   method: string;
   pathname: string;
-  requestUrl: string;
   query: Record<string, string>;
-  queryEntries: QueryEntry[];
   headers: Record<string, string | string[]>;
   body: {
     bytes: number;
@@ -72,17 +65,11 @@ async function createEchoResponse(req: IncomingMessage): Promise<BinaryUploadEch
   const requestUrl = req.url ?? '/';
   const url = new URL(requestUrl, 'http://127.0.0.1');
   const bodyBuffer = await readRequestBody(req);
-  const queryEntries = Array.from(url.searchParams.entries()).map(([key, value]) => ({
-    key,
-    value,
-  }));
 
   return {
     method: req.method ?? 'UNKNOWN',
     pathname: url.pathname,
-    requestUrl,
-    query: Object.fromEntries(queryEntries.map((item) => [item.key, item.value])),
-    queryEntries,
+    query: Object.fromEntries(url.searchParams.entries()),
     headers: normalizeHeaders(req.headers),
     body: {
       bytes: bodyBuffer.length,

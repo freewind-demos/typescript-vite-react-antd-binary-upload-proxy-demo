@@ -7,7 +7,7 @@
 - 反代：Vite `server.proxy`
 - 上传方式：`POST /api/upload-binary`
 - body：文件原始 binary
-- metadata：放 query + headers
+- 最小参数：query `fileName` + header `content-type`
 
 ## 运行
 
@@ -34,6 +34,6 @@ pnpm dev
 
 所以你能直接看清：
 
-- 文件名、大小、mimeType 放在什么位置
+- 文件名放在 query 的什么位置
 - `content-type` 怎么传
 - raw binary body 本身不在 JSON 字段里，而在 HTTP body
