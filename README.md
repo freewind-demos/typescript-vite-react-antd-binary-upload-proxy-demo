@@ -22,17 +22,17 @@ pnpm dev
 ## 页面里重点看什么
 
 - `前端将发送的 req 参数`
-- `后端实际收到的参数`
 
-后端会回显：
+后端收到的参数**不回前台**，而是打印在跑 `pnpm dev` 的终端控制台，例如：
 
 - `query`
 - `headers`
 - `body.bytes`
 - `body.sha256`
 - `body.first16BytesHex`
+- `savedTempFilePath`
 
-所以你能直接看清：
+所以你能直接在终端看清：
 
 - 文件名放在 query 的什么位置
 - `content-type` 怎么传

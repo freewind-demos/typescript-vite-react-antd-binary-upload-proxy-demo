@@ -1,7 +1,6 @@
 import React, { type ChangeEvent, type FC } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Alert, Card, Layout, Space, Spin, Typography } from 'antd';
-import type { BinaryUploadEchoResponse } from './server/binary-upload-backend';
 
 const { Content, Header } = Layout;
 
@@ -48,7 +47,7 @@ const JsonBlock: FC<{
 const App: FC = () => {
   const [selectedFileLabel, setSelectedFileLabel] = React.useState('未选择');
   const [lastRequest, setLastRequest] = React.useState<RequestPreview | null>(null);
-  const [serverResponse, setServerResponse] = React.useState<BinaryUploadEchoResponse | null>(null);
+  const [uploadOk, setUploadOk] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
 
@@ -63,7 +62,7 @@ const App: FC = () => {
     const requestPreview = buildRequestPreview(file);
     setSelectedFileLabel(`${file.name} (${file.size} bytes)`);
     setLastRequest(requestPreview);
-    setServerResponse(null);
+    setUploadOk(false);
     setErrorMessage('');
     setUploading(true);
 
@@ -79,7 +78,7 @@ const App: FC = () => {
         throw new Error(responseText || `upload failed with ${response.status}`);
       }
 
-      setServerResponse(JSON.parse(responseText) as BinaryUploadEchoResponse);
+      setUploadOk(true);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'upload failed');
     } finally {
@@ -104,6 +103,9 @@ const App: FC = () => {
               <Typography.Text type="secondary">
                 最少参数：`query.fileName`、header `content-type`、HTTP body binary。
               </Typography.Text>
+              <Typography.Text type="secondary">
+                后端收到的参数会打在跑 `pnpm dev` 的终端控制台，不回显到页面。
+              </Typography.Text>
             </Space>
           </Card>
 
@@ -111,12 +113,10 @@ const App: FC = () => {
 
           {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
 
+          {uploadOk ? <Alert type="success" message="上传成功。后端收到的参数请看终端控制台。" /> : null}
+
           <Card title="前端将发送的 req 参数">
             <JsonBlock emptyText="先选文件。" value={lastRequest} />
-          </Card>
-
-          <Card title="后端实际收到的参数">
-            <JsonBlock emptyText="还没收到上传。" value={serverResponse} />
           </Card>
         </Space>
       </Content>

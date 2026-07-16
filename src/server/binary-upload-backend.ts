@@ -1,7 +1,10 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
+import { writeFile } from 'node:fs/promises';
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
 const backendPort = 43901;
 
@@ -10,11 +13,13 @@ type BinaryUploadBackend = {
   port: number;
 };
 
-type BinaryUploadEchoResponse = {
+// 后端控制台打印用的请求摘要，不回给前台
+type BinaryUploadReceivedSummary = {
   method: string;
   pathname: string;
   query: Record<string, string>;
   headers: Record<string, string | string[]>;
+  savedTempFilePath: string;
   body: {
     bytes: number;
     sha256: string;
@@ -61,16 +66,25 @@ function readRequestBody(req: IncomingMessage) {
   });
 }
 
-async function createEchoResponse(req: IncomingMessage): Promise<BinaryUploadEchoResponse> {
+async function handleBinaryUpload(req: IncomingMessage): Promise<BinaryUploadReceivedSummary> {
   const requestUrl = req.url ?? '/';
   const url = new URL(requestUrl, 'http://127.0.0.1');
   const bodyBuffer = await readRequestBody(req);
+  const fileName = url.searchParams.get('fileName') || 'upload.bin';
+  const fileExtension = path.extname(fileName) || '.bin';
+  const savedTempFilePath = path.join(
+    tmpdir(),
+    `binary-upload-proxy-demo-${Date.now()}-${randomUUID()}${fileExtension}`,
+  );
+
+  await writeFile(savedTempFilePath, bodyBuffer);
 
   return {
     method: req.method ?? 'UNKNOWN',
     pathname: url.pathname,
     query: Object.fromEntries(url.searchParams.entries()),
     headers: normalizeHeaders(req.headers),
+    savedTempFilePath,
     body: {
       bytes: bodyBuffer.length,
       sha256: createHash('sha256').update(bodyBuffer).digest('hex'),
@@ -91,8 +105,10 @@ async function requestHandler(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (req.method === 'POST' && url.pathname === '/api/upload-binary') {
-    const echoResponse = await createEchoResponse(req);
-    sendJson(res, 200, echoResponse);
+    const received = await handleBinaryUpload(req);
+    // 参数只打在跑 pnpm dev 的终端，不回前台
+    console.log('[binary-upload] received request:\n' + JSON.stringify(received, null, 2));
+    sendJson(res, 200, { ok: true });
     return;
   }
 
@@ -138,4 +154,3 @@ function ensureBinaryUploadBackendServer() {
 }
 
 export { ensureBinaryUploadBackendServer };
-export type { BinaryUploadEchoResponse };
