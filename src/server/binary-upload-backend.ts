@@ -26,8 +26,7 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown) {
 }
 
 async function requestHandler(req: IncomingMessage, res: ServerResponse) {
-  const requestUrl = req.url ?? '/';
-  const url = new URL(requestUrl, 'http://127.0.0.1');
+  const url = new URL(req.url!, 'http://127.0.0.1');
 
   if (req.method === 'GET' && url.pathname === '/api/health') {
     sendJson(res, 200, { ok: true });
@@ -44,7 +43,7 @@ async function requestHandler(req: IncomingMessage, res: ServerResponse) {
 
   sendJson(res, 404, {
     message: 'not found',
-    method: req.method ?? 'UNKNOWN',
+    method: req.method,
     pathname: url.pathname,
   });
 }

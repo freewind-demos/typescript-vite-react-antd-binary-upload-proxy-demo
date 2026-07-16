@@ -70,26 +70,23 @@ function pickHeaders(headers: IncomingHttpHeaders) {
  * 4. 返回摘要，由调用方 console.log 到终端
  */
 export async function handleUploadBinary(req: IncomingMessage): Promise<ReceivedBinaryUpload> {
-  const requestUrl = req.url ?? '/';
-  const url = new URL(requestUrl, 'http://127.0.0.1');
+  // 约定：前端会带 url，且 query 里有 fileName
+  const url = new URL(req.url!, 'http://127.0.0.1');
+  const fileName = url.searchParams.get('fileName')!;
 
-  // ★ 步骤 1：读 query（前端放的 fileName）
-  const fileName = url.searchParams.get('fileName') || 'upload.bin';
-
-  // ★ 步骤 2：读 raw binary body（不是 JSON.parse，也不是 multer）
+  // ★ 步骤 1：读 raw binary body（不是 JSON.parse，也不是 multer）
   const bodyBuffer = await readRawBody(req);
 
-  // ★ 步骤 3：落盘，证明 body 就是文件字节
-  const fileExtension = path.extname(fileName) || '.bin';
+  // ★ 步骤 2：落盘，证明 body 就是文件字节
   const savedTempFilePath = path.join(
     tmpdir(),
-    `binary-upload-proxy-demo-${Date.now()}-${randomUUID()}${fileExtension}`,
+    `binary-upload-proxy-demo-${Date.now()}-${randomUUID()}${path.extname(fileName)}`,
   );
   await writeFile(savedTempFilePath, bodyBuffer);
 
-  // ★ 步骤 4：整理「后端实际收到了什么」，给终端打印
+  // ★ 步骤 3：整理收到的内容，给终端打印
   return {
-    method: req.method ?? 'UNKNOWN',
+    method: req.method!,
     pathname: url.pathname,
     query: Object.fromEntries(url.searchParams.entries()),
     headers: pickHeaders(req.headers),
@@ -99,7 +96,7 @@ export async function handleUploadBinary(req: IncomingMessage): Promise<Received
       sha256: createHash('sha256').update(bodyBuffer).digest('hex'),
       first16BytesHex: bodyBuffer.subarray(0, 16).toString('hex'),
       first16BytesBase64: bodyBuffer.subarray(0, 16).toString('base64'),
-      contentType: req.headers['content-type'] || 'application/octet-stream',
+      contentType: req.headers['content-type']!,
     },
   };
 }
